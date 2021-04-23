@@ -5,7 +5,7 @@
 package org.mozilla.fenix.settings
 
 import androidx.lifecycle.LifecycleOwner
-import androidx.preference.Preference
+import androidx.preference.SwitchPreferenceCompat
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import mozilla.components.concept.sync.AccountObserver
@@ -19,10 +19,10 @@ import org.mozilla.fenix.R
 /**
  * A view to help manage the sync preference in the "Logins and passwords" and "Credit cards"
  * settings. The provided [syncPreference] is used to navigate to the different fragments
- * that manages the sync account authentication. A summary status will be also added
+ * that manages the sync account authentication. A toggle  will be also added
  * depending on the sync account status.
  *
- * @param syncPreference The sync [Preference] to update and handle navigation.
+ * @param syncPreference The sync [SwitchPreferenceCompat] to update and handle navigation.
  * @param lifecycleOwner View lifecycle owner used to determine when to cancel UI jobs.
  * @param accountManager An instance of [FxaAccountManager].
  * @param syncEngine The sync engine that will be used for the sync status lookup.
@@ -35,7 +35,7 @@ import org.mozilla.fenix.R
  */
 @Suppress("LongParameterList")
 class SyncPreferenceView(
-    private val syncPreference: Preference,
+    private val syncPreference: SyncPreference,
     lifecycleOwner: LifecycleOwner,
     accountManager: FxaAccountManager,
     private val syncEngine: SyncEngine,
@@ -74,17 +74,25 @@ class SyncPreferenceView(
      */
     private fun updateSyncPreferenceStatus() {
         syncPreference.apply {
-            val syncEnginesStatus = SyncEnginesStorage(context).getStatus()
-            val loginsSyncStatus = syncEnginesStatus.getOrElse(syncEngine) { false }
+            widgetVisible = true
 
-            summary = context.getString(
-                if (loginsSyncStatus) R.string.preferences_passwords_sync_logins_on
-                else R.string.preferences_passwords_sync_logins_off
-            )
+            when (key) {
+                // Credit Cards
+                context.resources.getString(R.string.pref_key_credit_cards_sync_cards_across_devices) -> {
+                    title = context.getString(R.string.preferences_credit_cards_sync_cards)
+                }
 
-            setOnPreferenceClickListener {
-                onSyncStatusClicked()
-                true
+                // Logins
+                context.resources.getString(R.string.pref_key_sync_logins) -> {
+                    title = context.getString(R.string.preferences_passwords_sync_logins)
+                    val syncEnginesStatus = SyncEnginesStorage(context).getStatus()
+                    val loginsSyncStatus = syncEnginesStatus.getOrElse(syncEngine) { false }
+                    isChecked = loginsSyncStatus
+                    setOnPreferenceChangeListener { _, newValue ->
+                        SyncEnginesStorage(context).setStatus(syncEngine, newValue as Boolean)
+                        true
+                    }
+                }
             }
         }
     }
@@ -94,11 +102,21 @@ class SyncPreferenceView(
      */
     private fun updateSyncPreferenceNeedsLogin() {
         syncPreference.apply {
-            summary = context.getString(R.string.preferences_passwords_sync_logins_sign_in)
+            widgetVisible = false
 
-            setOnPreferenceClickListener {
+            when (key) {
+                context.resources.getString(R.string.pref_key_credit_cards_sync_cards_across_devices) -> {
+                    title =
+                        context.getString(R.string.preferences_credit_cards_sync_cards_across_devices)
+                }
+                context.resources.getString(R.string.pref_key_sync_logins) -> {
+                    title = context.resources.getString(R.string.preferences_passwords_sync_logins)
+                }
+            }
+
+            setOnPreferenceChangeListener { _, _ ->
                 onSignInToSyncClicked()
-                true
+                false
             }
         }
     }
@@ -108,11 +126,21 @@ class SyncPreferenceView(
      */
     private fun updateSyncPreferenceNeedsReauth() {
         syncPreference.apply {
-            summary = context.getString(R.string.preferences_passwords_sync_logins_reconnect)
+            widgetVisible = false
 
-            setOnPreferenceClickListener {
-                onReconnectClicked()
-                true
+            when (key) {
+                context.getString(R.string.pref_key_credit_cards_sync_cards_across_devices) -> {
+                    title =
+                        context.getString(R.string.preferences_credit_cards_sync_cards_across_devices)
+                }
+                context.getString(R.string.pref_key_sync_logins) -> {
+                    title = context.getString(R.string.preferences_passwords_sync_logins)
+                }
+            }
+
+            setOnPreferenceChangeListener { _, _ ->
+                onSignInToSyncClicked()
+                false
             }
         }
     }

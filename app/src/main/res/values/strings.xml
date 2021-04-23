@@ -1524,6 +1524,8 @@
     <string name="preferences_credit_cards_save_and_autofill_cards_summary">Data is encrypted</string>
     <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
     <string name="preferences_credit_cards_sync_cards_across_devices">Sync cards across devices</string>
+    <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
+    <string name="preferences_credit_cards_sync_cards">Sync cards</string>
     <!-- Preference option for adding a credit card -->
     <string name="preferences_credit_cards_add_credit_card">Add credit card</string>
     <!-- Preference option for managing saved credit cards -->

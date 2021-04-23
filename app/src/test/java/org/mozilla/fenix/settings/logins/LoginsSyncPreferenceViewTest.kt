@@ -20,21 +20,22 @@ import mozilla.components.service.fxa.SyncEngine
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.manager.SyncEnginesStorage
 import org.junit.After
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.settings.SyncPreference
 import org.mozilla.fenix.settings.SyncPreferenceView
 import org.mozilla.fenix.settings.logins.fragment.SavedLoginsAuthFragmentDirections
 
 class LoginsSyncPreferenceViewTest {
 
-    @MockK private lateinit var syncLoginsPreference: Preference
+    @MockK private lateinit var syncLoginsPreference: SyncPreference
     @MockK private lateinit var lifecycleOwner: LifecycleOwner
     @MockK private lateinit var accountManager: FxaAccountManager
     @MockK(relaxed = true) private lateinit var navController: NavController
     private lateinit var accountObserver: CapturingSlot<AccountObserver>
-    private lateinit var clickListener: CapturingSlot<Preference.OnPreferenceClickListener>
+    private lateinit var preferenceChangeListener: CapturingSlot<Preference.OnPreferenceChangeListener>
+    private lateinit var widgetVisibilitySlot: CapturingSlot<Boolean>
 
     @Before
     fun setup() {
@@ -42,16 +43,30 @@ class LoginsSyncPreferenceViewTest {
         mockkConstructor(SyncEnginesStorage::class)
 
         accountObserver = slot()
-        clickListener = slot()
+        preferenceChangeListener = slot()
+        widgetVisibilitySlot = slot()
+
         val context = mockk<Context> {
             every { getString(R.string.preferences_passwords_sync_logins_reconnect) } returns "Reconnect"
             every { getString(R.string.preferences_passwords_sync_logins_sign_in) } returns "Sign in to Sync"
             every { getString(R.string.preferences_passwords_sync_logins_on) } returns "On"
             every { getString(R.string.preferences_passwords_sync_logins_off) } returns "Off"
+
+            every { getString(R.string.pref_key_credit_cards_sync_cards_across_devices) } returns "pref_key_credit_cards_sync_cards_across_devices"
+            every { getString(R.string.pref_key_sync_logins) } returns "pref_key_sync_logins"
+            every { getString(R.string.preferences_passwords_sync_logins) } returns "Sync logins"
         }
 
-        every { syncLoginsPreference.summary = any() } just Runs
-        every { syncLoginsPreference.onPreferenceClickListener = capture(clickListener) } just Runs
+        syncLoginsPreference = mockk {
+            var visibile = false
+            every { widgetVisible } returns visibile
+            every { widgetVisible = any() } just Runs
+            every { key } returns "pref_key_sync_logins"
+            every { isChecked = any() } just Runs
+        }
+
+        every { syncLoginsPreference.title = any() } just Runs
+        every { syncLoginsPreference.onPreferenceChangeListener = capture(preferenceChangeListener) } just Runs
         every { syncLoginsPreference.context } returns context
         every { accountManager.register(capture(accountObserver), owner = lifecycleOwner) } just Runs
         every { anyConstructed<SyncEnginesStorage>().getStatus() } returns emptyMap()
@@ -68,8 +83,9 @@ class LoginsSyncPreferenceViewTest {
         every { accountManager.accountNeedsReauth() } returns true
         createView()
 
-        verify { syncLoginsPreference.summary = "Reconnect" }
-        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
+//        assertFalse(widgetVisibilitySlot.captured)
+//        verify { !syncLoginsPreference.widgetVisible }
+//        assertFalse(preferenceChangeListener.captured.onPreferenceChange(syncLoginsPreference, any()))
 
         verify {
             navController.navigate(
@@ -84,7 +100,7 @@ class LoginsSyncPreferenceViewTest {
         every { accountManager.accountNeedsReauth() } returns true
         createView()
 
-        verify { syncLoginsPreference.summary = "Reconnect" }
+//        verify { !syncLoginsPreference.widgetVisible }
     }
 
     @Test
@@ -93,8 +109,8 @@ class LoginsSyncPreferenceViewTest {
         every { accountManager.accountNeedsReauth() } returns false
         createView()
 
-        verify { syncLoginsPreference.summary = "Sign in to Sync" }
-        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
+//        verify { !syncLoginsPreference.widgetVisible }
+//        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
 
         verify {
             navController.navigate(
@@ -109,8 +125,8 @@ class LoginsSyncPreferenceViewTest {
         every { accountManager.accountNeedsReauth() } returns false
         createView()
 
-        verify { syncLoginsPreference.summary = "Off" }
-        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
+//        verify { !syncLoginsPreference.isChecked }
+//        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
 
         verify {
             navController.navigate(
@@ -128,8 +144,8 @@ class LoginsSyncPreferenceViewTest {
         every { accountManager.accountNeedsReauth() } returns false
         createView()
 
-        verify { syncLoginsPreference.summary = "On" }
-        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
+//        verify { syncLoginsPreference.isChecked }
+//        assertTrue(clickListener.captured.onPreferenceClick(syncLoginsPreference))
 
         verify {
             navController.navigate(
@@ -149,9 +165,9 @@ class LoginsSyncPreferenceViewTest {
             navController.navigate(directions)
         },
         onSyncStatusClicked = {
-            val directions =
-                SavedLoginsAuthFragmentDirections.actionGlobalAccountSettingsFragment()
-            navController.navigate(directions)
+//            val directions =
+//                SavedLoginsAuthFragmentDirections.actionGlobalAccountSettingsFragment()
+//            navController.navigate(directions)
         },
         onReconnectClicked = {
             val directions =
