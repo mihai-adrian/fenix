@@ -24,7 +24,8 @@ import static org.gradle.api.tasks.testing.TestResult.ResultType
 apply from: 'benchmark.gradle'
 
 android {
-    compileSdkVersion Config.compileSdkVersion
+    // compileSdkVersion Config.compileSdkVersion
+    compileSdkPreview "UpsideDownCake"
 
     project.maybeConfigForJetpackBenchmark(it)
     if (project.hasProperty("testBuildType")) {
